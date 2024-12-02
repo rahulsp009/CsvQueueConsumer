@@ -5,6 +5,7 @@ using ProductServiceLibrary.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,13 +24,40 @@ namespace ProductServiceLibrary.Services
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 string sqlQuery = "INSERT INTO Product (FileId, Name, Price, Category, StockQuantity) VALUES (@FileId, @Name, @Price, @Category, @StockQuantity); SELECT CAST(SCOPE_IDENTITY() as int)";
-                return await db.ExecuteScalarAsync<int>(sqlQuery, product);
+                try
+                {
+                    return await db.ExecuteScalarAsync<int>(sqlQuery, product);
+                }
+                catch (SqlException ex)
+                {
+                    throw;
+                }
             }
         }
 
-        public Task UpdateFileProcessingStatus(int fileId)
+        public async Task UpdateFileProcessingStatus(int fileId)
         {
-            throw new NotImplementedException();
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                const string sql = @"
+                    UPDATE FileProcessing 
+                    SET StatusCode = 2
+                    WHERE Id = @Id";
+
+                var parameters = new
+                {
+                    Id = fileId,
+                };
+
+                try
+                {
+                    await db.ExecuteAsync(sql, parameters);
+                }
+                catch (SqlException ex)
+                {
+                    throw;
+                }
+            }
         }
     }
 }
